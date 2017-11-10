@@ -1,0 +1,12 @@
+extends layout
+
+block content
+  h1 Products
+  #container
+    each item in list
+      form#uploadForm(ref='uploadForm' action='http://localhost:8000/upload' method='post' encType="multipart/form-data")
+      input(type='file' name='sampleFile')
+      input(type='submit' value='Upload')
+  h1= title
+  p!= JSON.stringify(list)
+

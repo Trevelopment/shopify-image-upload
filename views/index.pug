@@ -1,0 +1,19 @@
+extends layout
+
+block content
+  h1= title
+  #container
+    each item in list
+      .image-block
+        span.lot-num= item.handle.toUpperCase()
+        div.item-id= item.id
+        div.lot-name!= item.title
+        if item.image
+          img.prod-image.thumbnail.gallery(src=item.image.src alt=item.title data-featherlight=item.image.src) 
+        else
+          p= "NO IMAGE"		  
+        //img.prod-image(src=image.src class="thumbnail gallery" data-featherlight=image.src) 
+        p!= item.body_html
+        +link("https://testscreenbid.myshopify.com/products/"+item.handle, item.title)
+  //p!= JSON.stringify(list)
+

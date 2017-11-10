@@ -1,0 +1,10 @@
+mixin link(ref, name)
+  a(class="btn" href=ref)= name
+  //- attributes == {class: "btn"}
+doctype html
+html
+  head
+    title= title
+    link(rel='stylesheet', href='/css/style.css')
+  body
+    block content
