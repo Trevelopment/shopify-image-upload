@@ -6,19 +6,27 @@ var walkSync = function(dir, filelist) {
   files = fs.readdirSync(dir);
   filelist = filelist || [];
   files.forEach(function(file) {
-    if (fs.statSync(path.join(dir, file)).isDirectory()) {
-      filelist = walkSync(path.join(dir, file), filelist);
-    }
-    else {
-		if (file.indexOf('.jpg') == file.length - 4
-		|| file.indexOf('.png') == file.length - 4) {
-			filelist.push(path.join(dir, file));
-		}
+    try {
+       if (fs.statSync(path.join(dir, file)).isFile()) {
+        if (file.indexOf('.jpg') == file.length - 4
+        || file.indexOf('.png') == file.length - 4) {
+          filelist.push(path.join(dir, file));
+        }
+      }else if (fs.statSync(path.join(dir, file)).isDirectory()) {
+        filelist = walkSync(path.join(dir, file), filelist);
+      } else {
+        //do nothing
+      }
+    } catch (e) {
+      console.error(e);
     }
   });
   return filelist;
 };
 exports.getImageList = function (showCode) {
-  return walkSync("photos/"+showCode+"/");
-  //document.getElementsByTagName('body')[0].innerHTML = test;
+  if(showCode.length > 5) {
+    return console.log("ERROR");
+  } else {
+    return walkSync("photos/"+showCode+"/");
+  }
 }

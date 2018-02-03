@@ -1,50 +1,43 @@
 var express = require('express');
 var router = express.Router();
-var keys = require('../secret/keys.js');
+var keys = require('../secret/screenbid.js')
 const syncWalk = require('../public/js/syncWalk.js');
 const Shopify = require('shopify-api-node');
 const shopify = new Shopify({
-  shopName: 'TestScreenBid', // MYSHOP.myshopify.com
+  shopName: keys.shopName(), // MYSHOP.myshopify.com
   apiKey: keys.getApiKey(), // Your API key
   password: keys.getApiPass(), // Your API password
-  autoLimit: { calls: 2, interval: 1000, bucketSize: 25 }
+  autoLimit: { calls: 2, interval: 3000, bucketSize: 20 }
 });
-const csv = require('ya-csv');
-/*
-var reader = new csv.createCsvFileReader('parks.csv');
-var writer = new csv.CsvWriter(process.stdout);
-reader.addListener('data', function(data) {
-    writer.writeRecord(data);
-});
-*/
-/*
-
-fs.createReadStream('parks.csv').pipe(parser);
-
-var parser = csv.parse(function(err, data){
-  if(err) console.log(err);
-  console.log(data);
-});
-shippingZone
-list([params])
-shop
-get([params])
-*/
-var output = [];
-/* GET shop? */
+//shopify.on('callLimits', limits => console.log(limits));
+var query_data = {
+  "fields": "id,title,body_html,sku,title,price,image,images"
+};
+var output = {};
+/* GET products. */
 router.get('/', function(req, res, next) {
-  var itemTitle="Shop?";
-  var itemString="Hoe";
+  var itemTitle="Products";
+  var itemString="Items";
+  var thepage = parseInt(req.query.page) || 1;
+  var currPage = 1;
+  var maxPages = 1;
   var productlist = [];
-  shopify.metafield.list()
-  .then(metafield => console.log(metafield))
+  shopify.product.count()
+  .then(count => productLists(count))
   .catch(err => console.error(err));
 
-  var addMissingImages = function(product, productImages) {
-    var prd = product.id;
+  var productLists = function(count) {
+    maxPages = Math.ceil(count/250,0);
+    thepage = (thepage > maxPages) ? maxPages : thepage;
+    for (i = 0; i < maxPages; i++) {
+      shopify.product.list({ page: i+1, limit: 250 })
+      .then(products => getImageList(products))
+      .catch(err => console.error(err));
+    }
   }
   var getImageList = function(products) {
-    for (product in products) {
+    console.log(JSON.stringify(products));
+    /*for (product in products) {
       var showCode = products[product].handle.replace(/[\_\d]/g,'').toUpperCase(); //Assuming we are only uploading one show at a time
       var allImages = syncWalk.getImageList(showCode); //Speeds up processing if we only get the list of images once
       var lotNum = products[product].handle.toUpperCase();
@@ -52,24 +45,46 @@ router.get('/', function(req, res, next) {
         for (img in allImages) {
           if(allImages[img].includes(lotNum+'_')) {
             var imgPos = allImages[img].substring(allImages[img].indexOf("_") + 1);
+            imgPos = imgPos.substring(0,1);
             console.log("Lot#: "+ lotNum+" ImgSrc: "+allImages[img]+" Pos: "+ imgPos);
             shopify.productImage.create(products[product].id,{"postiton":imgPos, "src":"https\:\/\/screenbid.info\/"+allImages[img]})
             //.then(image => (image.statusCode == 200) ? output.push(image.src) : console.log(image.statusCode))
-            .then(image => console.log(image))
+            .then(image => image)
             .catch(err => console.error(err));
           }
         }
       } else {
-        /*shopify.productImage.list(products[product].id,{"limit":1})
-        .then(images => addMissingImages(products[product], images))
+
+     /*shopify.metafield.list({metafield: { owner_resource: 'product', owner_id: products[product].id}})
+        .then(fields => console.log(fields))
         .catch(err => console.error(err));*/
+      /*shopify.metafield.create({
+          key: 'show',
+          value: 'Show Title',
+          value_type: 'string',
+          namespace: 'c_f',
+          owner_resource: 'product',
+          owner_id: products[product].id
+        }).then(
+          metafield => console.log(metafield),
+          err => console.error(err)
+        );
       }
+    }*/
+    output = merge_options(output, products);
+    console.log(currPage, thepage);
+    if (currPage === thepage) {
+      res.render('index',{title: itemTitle, list: output, bodytext: itemString, shopname: keys.shopName()});
+    }
+    currPage++;
   }
-  res.render('index',{title: itemTitle, list: products, bodytext: itemString});
-
-}
 });
-
+function merge_options(obj1,obj2){
+    var obj3 = {};
+    for (var attrname in obj1) { obj3[attrname] = obj1[attrname]; }
+    for (var attrname in obj2) { obj3[attrname] = obj2[attrname]; }
+    return obj3;
+}
 /*
 var itemList = [];
 var ids = [];
